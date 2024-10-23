@@ -12,8 +12,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static net.minecraft.DedicatedServer.theDedicatedServer;
-
 public class MyWebSocketServer extends WebSocketServer {
     public static MobEffectList [] positivePotions = new MobEffectList[]{MobEffectList.resistance, MobEffectList.field_76444_x, MobEffectList.nightVision, MobEffectList.heal, MobEffectList.moveSpeed, MobEffectList.digSpeed, MobEffectList.damageBoost, MobEffectList.regeneration};
     public static MobEffectList [] negativePotions = new MobEffectList[]{MobEffectList.moveSlowdown, MobEffectList.digSlowdown, MobEffectList.confusion, MobEffectList.weakness, MobEffectList.blindness, MobEffectList.poison, MobEffectList.hunger};
@@ -54,10 +52,10 @@ public class MyWebSocketServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String messageOut) {
-        System.out.println("Received message from " + conn.getRemoteSocketAddress() + ": " + messageOut);
+//        System.out.println("Received message from " + conn.getRemoteSocketAddress() + ": " + messageOut);
         Gson gson = new Gson();
         WebsocketInitMessage message1 = gson.fromJson(messageOut, WebsocketInitMessage.class);
-        WebsocketSignleHeap  current = (WebsocketSignleHeap) theDedicatedServer.WSMessageHeap.get(message1.account);
+        WebsocketSignleHeap  current = (WebsocketSignleHeap) MinecraftServer.F().WSMessageHeap.get(message1.account);
         if(message1.login_token.equals("pollMessage")) {
             if(current != null){
                 current.fifoHeap.poll();
@@ -75,7 +73,7 @@ public class MyWebSocketServer extends WebSocketServer {
                 message1.getRequestToken();
                 WebsocketSignleHeap websocketSignleHeap = new WebsocketSignleHeap(message1);
                 websocketSignleHeap.fifoHeap.offer(message1.encryptMessage);
-                theDedicatedServer.WSMessageHeap.put(message1.account, websocketSignleHeap);
+                MinecraftServer.F().WSMessageHeap.put(message1.account, websocketSignleHeap);
             }
         }
     }

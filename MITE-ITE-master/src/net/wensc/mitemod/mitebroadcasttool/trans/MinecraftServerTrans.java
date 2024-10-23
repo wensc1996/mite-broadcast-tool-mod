@@ -47,7 +47,6 @@ public class MinecraftServerTrans {
                     String [] ivMessage = encryptMessage.split(":");
                     try {
                         String message = decryptString(ivMessage[1], instance.initMessage.request_token, ivMessage[0]);
-                        System.out.println(message);
                         WebsocktMessage message1 = gson.fromJson(message, WebsocktMessage.class);
                         ArrayList<EntityPlayer> entityPlayers = myWebSocketServer.getTargetPlayer(message1.playerName);
                         if(!entityPlayers.isEmpty()) {
