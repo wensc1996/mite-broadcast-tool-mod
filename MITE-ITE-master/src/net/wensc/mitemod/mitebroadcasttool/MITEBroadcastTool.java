@@ -37,10 +37,10 @@ public class MITEBroadcastTool extends AbstractMod {
     }
 
     public int modVerNum() {
-        return 2;
+        return 4;
     }
 
     public String modVerStr() {
-        return "0.0.2";
+        return "0.0.4";
     }
 }

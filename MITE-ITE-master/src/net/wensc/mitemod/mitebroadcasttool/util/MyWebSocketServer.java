@@ -54,7 +54,6 @@ public class MyWebSocketServer extends WebSocketServer {
 
     @Override
     public void onMessage(WebSocket conn, String messageOut) {
-        System.out.println("Received message from " + conn.getRemoteSocketAddress() + ": " + messageOut);
         Gson gson = new Gson();
         WebsocketInitMessage message1 = gson.fromJson(messageOut, WebsocketInitMessage.class);
         WebsocketSignleHeap  current = (WebsocketSignleHeap) theDedicatedServer.WSMessageHeap.get(message1.account);

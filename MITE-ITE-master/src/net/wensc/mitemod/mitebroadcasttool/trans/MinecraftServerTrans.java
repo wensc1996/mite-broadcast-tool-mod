@@ -47,7 +47,6 @@ public class MinecraftServerTrans {
                     String [] ivMessage = encryptMessage.split(":");
                     try {
                         String message = decryptString(ivMessage[1], instance.initMessage.request_token, ivMessage[0]);
-                        System.out.println(message);
                         WebsocktMessage message1 = gson.fromJson(message, WebsocktMessage.class);
                         ArrayList<EntityPlayer> entityPlayers = myWebSocketServer.getTargetPlayer(message1.playerName);
                         if(!entityPlayers.isEmpty()) {
@@ -56,7 +55,9 @@ public class MinecraftServerTrans {
                                 entityPlayer.addChatMessage("["+message1.plaftform+"]-["+message1.nickname+"]"+message1.content);
                                 if(message1.action.startsWith("spawn:")){
                                     int entityId = Integer.parseInt(message1.action.split(":")[1]);
-                                    myWebSocketServer.spawnEntity(entityId, entityPlayer);
+                                    for (int i = 0; i < message1.count; i++) {
+                                        myWebSocketServer.spawnEntity(entityId, entityPlayer);
+                                    }
                                 } else {
                                     switch (message1.action){
                                         case "addXp":
