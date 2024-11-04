@@ -55,9 +55,16 @@ public class DedicatedServerTrans {
                                 entityPlayer.addChatMessage("["+message1.plaftform+"]-["+message1.nickname+"]"+message1.content);
                                 if(message1.action.startsWith("spawn:")){
                                     int entityId = Integer.parseInt(message1.action.split(":")[1]);
-                                    myWebSocketServer.spawnEntity(entityId, entityPlayer);
+                                    for (int i = 0; i < message1.count; i++) {
+                                        myWebSocketServer.spawnEntity(entityId, entityPlayer);
+                                    }
                                 } else {
                                     switch (message1.action){
+                                        case "killNeighbouringMob":
+                                            for (int i = 0; i < message1.count; i++) {
+                                                myWebSocketServer.killNeighbouringMob(entityPlayer);
+                                            }
+                                            break;
                                         case "addXp":
                                             for (int i = 0; i < message1.count; i++) {
                                                 myWebSocketServer.addXp(entityPlayer);

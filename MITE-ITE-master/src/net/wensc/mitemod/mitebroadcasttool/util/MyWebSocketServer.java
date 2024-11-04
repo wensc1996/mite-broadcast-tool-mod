@@ -11,6 +11,7 @@ import org.java_websocket.server.WebSocketServer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static net.minecraft.DedicatedServer.theDedicatedServer;
 
@@ -79,7 +80,17 @@ public class MyWebSocketServer extends WebSocketServer {
         }
     }
 
-
+    public void killNeighbouringMob(EntityPlayer entityPlayer){
+        if(!entityPlayer.isDead && entityPlayer != null) {
+            List entityList = entityPlayer.getNearbyEntities(8f, 8f);
+            entityList.forEach(e -> {
+                if(e instanceof EntityMonster){
+                    EntityMonster entityMob = (EntityMonster)e;
+                    entityMob.setDead();
+                }
+            });
+        }
+    }
     public void spawnEntity(Integer entityId, EntityPlayer entityPlayer){
         Entity entity = EntityTypes.createEntityByID(entityId, entityPlayer.worldObj);
         if (entity != null && entity instanceof EntityInsentient) {
