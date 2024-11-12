@@ -1,8 +1,10 @@
 package net.wensc.mitemod.mitebroadcasttool.trans;
 
 import com.google.gson.Gson;
+import net.minecraft.ChatMessage;
 import net.minecraft.DedicatedServer;
 import net.minecraft.EntityPlayer;
+import net.minecraft.EnumChatFormat;
 import net.wensc.mitemod.mitebroadcasttool.util.Configs;
 import net.wensc.mitemod.mitebroadcasttool.util.MyWebSocketServer;
 import net.wensc.mitemod.mitebroadcasttool.util.WebsocketSignleHeap;
@@ -22,6 +24,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import static net.wensc.mitemod.mitebroadcasttool.util.StaticKeeper.decryptString;
@@ -40,19 +43,25 @@ public class DedicatedServerTrans {
     public Gson gson = new Gson();
     @Inject(method = "s", at = @At("RETURN"))
     public void tick(CallbackInfo callbackInfo) {
-        if(!this.WSMessageHeap.isEmpty()) {
-            this.WSMessageHeap.forEach((account, instance) -> {
-                if(instance.initMessage.request_token !=  null && !instance.fifoHeap.isEmpty()){
-                    String encryptMessage = (String)instance.fifoHeap.peek();// 先去查询
+        Iterator<Map.Entry<String, WebsocketSignleHeap>> wsInstanceIterator = this.WSMessageHeap.entrySet().iterator();
+        while (wsInstanceIterator.hasNext()){
+            Map.Entry<String, WebsocketSignleHeap> wsInstance = wsInstanceIterator.next();
+            WebsocketSignleHeap instance = wsInstance.getValue();
+            if(instance.initMessage.request_token !=  null){
+                for (int messageIndex  = 0; messageIndex< instance.fifoHeap.size(); messageIndex++){
+                    String encryptMessage = instance.fifoHeap.get(messageIndex);// 先去查询
                     String [] ivMessage = encryptMessage.split(":");
                     try {
                         String message = decryptString(ivMessage[1], instance.initMessage.request_token, ivMessage[0]);
                         WebsocktMessage message1 = gson.fromJson(message, WebsocktMessage.class);
                         ArrayList<EntityPlayer> entityPlayers = myWebSocketServer.getTargetPlayer(message1.playerName);
+                        instance.fifoHeap.remove(messageIndex); // 处理就清除
                         if(!entityPlayers.isEmpty()) {
-                            instance.fifoHeap.poll(); // 处理就清除
                             entityPlayers.forEach(entityPlayer -> {
-                                entityPlayer.addChatMessage("["+message1.plaftform+"]-["+message1.nickname+"]"+message1.content);
+                                entityPlayer.sendChatToPlayer(
+                                        ChatMessage.createFromTranslationKey("["+message1.plaftform+"]").setColor(EnumChatFormat.YELLOW)
+                                                .appendComponent(ChatMessage.createFromTranslationKey("["+message1.nickname+"]").setColor(EnumChatFormat.AQUA))
+                                                .appendComponent(ChatMessage.createFromTranslationKey(message1.content).setColor(EnumChatFormat.WHITE)));
                                 if(message1.action.startsWith("spawn:")){
                                     int entityId = Integer.parseInt(message1.action.split(":")[1]);
                                     for (int i = 0; i < message1.count; i++) {
@@ -87,16 +96,14 @@ public class DedicatedServerTrans {
                                             break;
                                     }
                                 }
-
                             });
                         }
-                    } catch (InvalidAlgorithmParameterException | RuntimeException | NoSuchPaddingException |
-                             NoSuchAlgorithmException |
+                    } catch (InvalidAlgorithmParameterException | RuntimeException | NoSuchPaddingException | NoSuchAlgorithmException |
                              InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
                         throw new RuntimeException(e);
                     }
                 }
-            });
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.minecraft.DedicatedServer.theDedicatedServer;
 
@@ -58,37 +59,34 @@ public class MyWebSocketServer extends WebSocketServer {
         Gson gson = new Gson();
         WebsocketInitMessage message1 = gson.fromJson(messageOut, WebsocketInitMessage.class);
         WebsocketSignleHeap  current = (WebsocketSignleHeap) theDedicatedServer.WSMessageHeap.get(message1.account);
-        if(message1.login_token.equals("pollMessage")) {
-            if(current != null){
-                current.fifoHeap.poll();
+        if(current != null){
+            if(!current.initMessage.login_token.equals(message1.login_token)){
+                // 要对存量数据进行清除，因为此时要改变密钥，存量消息无法再解析
+                current.initMessage.login_token = message1.login_token;
+                current.initMessage.getRequestToken();
+                current.fifoHeap = new ArrayList<>();
             }
-        } else {
-            if(current != null){
-                if(!current.initMessage.login_token.equals(message1.login_token)){
-                    // 要对存量数据进行清除，因为此时要改变密钥，存量消息无法再解析
-                    current.initMessage.login_token = message1.login_token;
-                    current.initMessage.getRequestToken();
-                    current.fifoHeap = new FifoHeap<>();
-                }
-                current.fifoHeap.offer(message1.encryptMessage);
-            }  else {
-                message1.getRequestToken();
-                WebsocketSignleHeap websocketSignleHeap = new WebsocketSignleHeap(message1);
-                websocketSignleHeap.fifoHeap.offer(message1.encryptMessage);
-                theDedicatedServer.WSMessageHeap.put(message1.account, websocketSignleHeap);
-            }
+            current.fifoHeap.add(message1.encryptMessage);
+        }  else {
+            message1.getRequestToken();
+            WebsocketSignleHeap websocketSignleHeap = new WebsocketSignleHeap(message1);
+            websocketSignleHeap.fifoHeap.add(message1.encryptMessage);
+            theDedicatedServer.WSMessageHeap.put(message1.account, websocketSignleHeap);
         }
     }
 
     public void killNeighbouringMob(EntityPlayer entityPlayer){
         if(!entityPlayer.isDead && entityPlayer != null) {
             List entityList = entityPlayer.getNearbyEntities(8f, 8f);
+            AtomicInteger size = new AtomicInteger();
             entityList.forEach(e -> {
-                if(e instanceof EntityMonster){
-                    EntityMonster entityMob = (EntityMonster)e;
-                    entityMob.setDead();
+                if(e instanceof EntityMonster || e instanceof EntityBat || e instanceof EntityCubic){
+                    size.getAndIncrement();
+                    EntityLiving entityLiving = (EntityLiving)e;
+                    entityLiving.setDead();
                 }
             });
+            entityPlayer.addChatMessage("已清除附近的怪物，合计：" + size.get());
         }
     }
     public void spawnEntity(Integer entityId, EntityPlayer entityPlayer){
