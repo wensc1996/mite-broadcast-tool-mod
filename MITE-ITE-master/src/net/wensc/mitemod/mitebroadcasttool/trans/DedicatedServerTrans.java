@@ -68,32 +68,16 @@ public class DedicatedServerTrans {
                                         myWebSocketServer.spawnEntity(entityId, entityPlayer);
                                     }
                                 } else {
-                                    switch (message1.action){
-                                        case "killNeighbouringMob":
-                                            for (int i = 0; i < message1.count; i++) {
-                                                myWebSocketServer.killNeighbouringMob(entityPlayer);
+                                    if(message1.action.equals("random"))  {
+                                        for (int i = 0; i < message1.count; i++) {
+                                            if(MyWebSocketServer.rand.nextInt(7) < 3) {
+                                                myWebSocketServer.handleAction(MyWebSocketServer.positiveRandomNames[MyWebSocketServer.rand.nextInt(MyWebSocketServer.positiveRandomNames.length)], 1, entityPlayer, true);
+                                            } else {
+                                                myWebSocketServer.handleAction(MyWebSocketServer.negativeRandomNames[MyWebSocketServer.rand.nextInt(MyWebSocketServer.negativeRandomNames.length)], 1, entityPlayer, true);
                                             }
-                                            break;
-                                        case "addXp":
-                                            for (int i = 0; i < message1.count; i++) {
-                                                myWebSocketServer.addXp(entityPlayer);
-                                            }
-                                            break;
-                                        case "subXp":
-                                            for (int i = 0; i < message1.count; i++) {
-                                                myWebSocketServer.subXp(entityPlayer);
-                                            }
-                                            break;
-                                        case "addRandomPositivePotion":
-                                            for (int i = 0; i < message1.count; i++) {
-                                                myWebSocketServer.addRandomPositivePotion(entityPlayer);
-                                            }
-                                            break;
-                                        case "addRandomNegativePotion":
-                                            for (int i = 0; i < message1.count; i++) {
-                                                myWebSocketServer.addRandomNegativePotion(entityPlayer);
-                                            }
-                                            break;
+                                        }
+                                    } else {
+                                        myWebSocketServer.handleAction(message1.action, message1.count, entityPlayer, false);
                                     }
                                 }
                             });

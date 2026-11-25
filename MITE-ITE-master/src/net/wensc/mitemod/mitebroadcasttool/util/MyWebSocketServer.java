@@ -12,17 +12,78 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.minecraft.DedicatedServer.theDedicatedServer;
 
 public class MyWebSocketServer extends WebSocketServer {
+    public static Random rand = new Random();
+    public static String [] positiveRandomNames  = new String[]{"addXp", "addRandomPositivePotion"};
+    public static String [] negativeRandomNames  = new String[]{"randomSpawn", "subXp",  "addRandomNegativePotion"};
+    public static int [] randomBaseEntityIDS = new int[] {50, 51, 52,  54, 57, 59, 60, 65, 66};
     public static MobEffectList [] positivePotions = new MobEffectList[]{MobEffectList.resistance, MobEffectList.field_76444_x, MobEffectList.nightVision, MobEffectList.heal, MobEffectList.moveSpeed, MobEffectList.digSpeed, MobEffectList.damageBoost, MobEffectList.regeneration};
     public static MobEffectList [] negativePotions = new MobEffectList[]{MobEffectList.moveSlowdown, MobEffectList.digSlowdown, MobEffectList.confusion, MobEffectList.weakness, MobEffectList.blindness, MobEffectList.poison, MobEffectList.hunger};
     public MyWebSocketServer(InetSocketAddress address) {
         super(address);
         this.start();
     }
+
+    public void randomSpawn(EntityPlayer entityPlayer){
+        Entity entity = null;
+        if(rand.nextInt(2) == 0)  {
+            entity =  EntityTypes.createEntityByID(randomBaseEntityIDS[rand.nextInt(randomBaseEntityIDS.length)], entityPlayer.worldObj);
+        } else {
+            entity =  EntityTypes.createEntityByID(513 + rand.nextInt(38), entityPlayer.worldObj);
+        }
+        if (entity != null ) {
+            EntityInsentient entityLiving = (EntityInsentient)entity;
+            entityLiving.setPosition(entityPlayer.posX, entityPlayer.posY, entityPlayer.posZ);
+            if(!entityPlayer.isDead && entityPlayer != null && (entity instanceof EntityMonster || entity instanceof EntityBat || entity instanceof EntityCubic)) {
+                // PotionCannotHarm
+                entityLiving.addPotionEffect(new MobEffect(31, 30, 0));
+            }
+            entityPlayer.worldObj.spawnEntityInWorld(entity);
+            entityLiving.onSpawnWithEgg(null);
+            entityLiving.entityFX(EnumEntityFX.summoned);
+        }
+    }
+
+    public void handleAction(String action,int count, EntityPlayer entityPlayer, boolean isRandom){
+        switch (action){
+            case  "randomSpawn":
+                for (int i = 0; i < count; i++) {
+                    this.randomSpawn(entityPlayer);
+                }
+                break;
+            case "killNeighbouringMob":
+                for (int i = 0; i < count; i++) {
+                    this.killNeighbouringMob(entityPlayer);
+                }
+                break;
+            case "addXp":
+                for (int i = 0; i < count; i++) {
+                    this.addXp(entityPlayer);
+                }
+                break;
+            case "subXp":
+                for (int i = 0; i < count; i++) {
+                    this.subXp(entityPlayer);
+                }
+                break;
+            case "addRandomPositivePotion":
+                for (int i = 0; i < count; i++) {
+                    this.addRandomPositivePotion(entityPlayer);
+                }
+                break;
+            case "addRandomNegativePotion":
+                for (int i = 0; i < count; i++) {
+                    this.addRandomNegativePotion(entityPlayer);
+                }
+                break;
+        }
+    }
+
 
     public ArrayList<EntityPlayer> getTargetPlayer(String name) {
         ArrayList<EntityPlayer> entityPlayerList = new ArrayList<>();
@@ -115,14 +176,23 @@ public class MyWebSocketServer extends WebSocketServer {
     }
 
     public void addRandomPositivePotion(EntityPlayer entityPlayer) {
-        if(!entityPlayer.isDead && entityPlayer != null) {
-            entityPlayer.addPotionEffect(new MobEffect(positivePotions[entityPlayer.worldObj.rand.nextInt(positivePotions.length)].id, 400, entityPlayer.worldObj.rand.nextInt(3)));
-        }
+        addRandomPotion(entityPlayer, positivePotions);
     }
 
     public void addRandomNegativePotion(EntityPlayer entityPlayer) {
+        addRandomPotion(entityPlayer, negativePotions);
+    }
+
+    private void addRandomPotion(EntityPlayer entityPlayer, MobEffectList[] potions) {
         if(!entityPlayer.isDead && entityPlayer != null) {
-            entityPlayer.addPotionEffect(new MobEffect(negativePotions[entityPlayer.worldObj.rand.nextInt(negativePotions.length)].id, 400, entityPlayer.worldObj.rand.nextInt(3)));
+            MobEffectList potion = potions[entityPlayer.worldObj.rand.nextInt(potions.length)];
+            int amplifier = entityPlayer.worldObj.rand.nextInt(3);
+            MobEffect activeEffect = entityPlayer.getActivePotionEffect(potion);
+            if(activeEffect != null && activeEffect.getAmplifier() == amplifier) {
+                activeEffect.setDuration(activeEffect.getDuration() + 400);
+            } else {
+                entityPlayer.addPotionEffect(new MobEffect(potion.id, 400, amplifier));
+            }
         }
     }
 
